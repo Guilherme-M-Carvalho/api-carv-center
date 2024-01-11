@@ -20,3 +20,53 @@ model User {
 
   @@map("cad_user")
 }
+
+model Car {
+  id          Int       @id @default(autoincrement())
+  description String
+  plate       String
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(now())
+
+  @@map("cad_car")
+  services ServiceCar[]
+}
+
+model ServiceCar {
+  id          Int       @id @default(autoincrement())
+  price       String
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(now())
+
+  car Car @relation(fields: [car_id], references: [id])
+
+  @@map("cad_service_car")
+  car_id Int
+  serviceDetail ServiceDetailCar[]
+}
+
+model ServiceDetailCar {
+  id          Int       @id @default(autoincrement())
+  description String
+  price       String
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(now())
+
+  service ServiceCar @relation(fields: [service_id], references: [id])
+
+  @@map("cad_service_detail")
+  service_id Int
+  image Image[]
+}
+
+model Image {
+  id         Int       @id @default(autoincrement())
+  name       String
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(now())
+
+  serviceDetail ServiceDetailCar @relation(fields: [service_detail_id], references: [id])
+  
+  @@map("cad_image")
+  service_detail_id Int
+}
