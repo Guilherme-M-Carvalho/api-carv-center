@@ -13,7 +13,6 @@ export class CreateServiceController {
             price 
         })
 
-        res.send(service)
-
+        return res.send(service)
     }
 }
