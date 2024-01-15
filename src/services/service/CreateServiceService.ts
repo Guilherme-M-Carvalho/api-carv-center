@@ -5,8 +5,8 @@ export interface ServiceProps {
     car?: Car
     car_id?: number
     serviceDetail: ServiceDetail[]
-    price?: number
     id?: number
+    files: any
 }
 
 export interface Car {
@@ -34,8 +34,10 @@ export interface Image {
 export class CreateServiceService {
     async execute({
         car,
-        serviceDetail
+        serviceDetail,
+        files
     }: ServiceProps) {
+        
         const { plate } = car
         const existCar = await prismaClient.car.findFirst({
             where: {
@@ -56,16 +58,21 @@ export class CreateServiceService {
 
         const priceTotal = serviceDetail.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
 
+        console.log(files?.vehicle);
+        
         const data: any = {
             price: Number(priceTotal),
             serviceDetail: {
-                create: serviceDetail?.map(({ description, image, price }) => {
+                create: serviceDetail?.map(({ description, image, price }, index) => {
                     return {
                         description: description,
                         image: {
-                            create: image.map(({ name, before }) => {
+                            create: image.map(({ name, before }, index) => {
+
+                                const fileName = files.service[index]?.filename
+
                                 return {
-                                    name: name,
+                                    name: fileName,
                                     before: before
                                 }
                             })
@@ -79,9 +86,11 @@ export class CreateServiceService {
                     description: car.description,
                     plate: car.plate.toUpperCase(),
                     image: {
-                        create: car?.image?.map(({ name }) => {
+                        create: files?.vehicle?.map((vehicle) => {
+                            console.log(vehicle, 'vehiclevehicle');
+                            
                             return {
-                                name: name
+                                name: vehicle?.filename
                             }
                         })
                     }

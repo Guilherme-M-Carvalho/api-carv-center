@@ -7,14 +7,17 @@ import { CreateServiceController } from "./controllers/service/CreateServiceCont
 import { FindServiceController } from "./controllers/service/FindServiceController";
 import { FindByPlateCarController } from "./controllers/car/FindByPlateCarController";
 import { FindFirstServiceController } from "./controllers/service/FindFirstServiceController";
+import uploadConfig from "./config/multer";
+import multer from "multer";
 
 const router = Router();
+const upload = multer(uploadConfig.upload("./uploads"))
 
 router.post("/api/session", new AuthUserController().handle)
 router.post("/api/user", new CreateUserController().handle)
 router.get("/api/user/:id", isAuthenticated, new DetailUserController().handle)
 
-router.post("/api/service", isAuthenticated, new CreateServiceController().handle)
+router.post("/api/service", isAuthenticated, upload.fields([{name: "vehicle"}, {name: "service"}]), new CreateServiceController().handle)
 router.get("/api/service", isAuthenticated, new FindServiceController().handle)
 router.get("/api/service/:id", isAuthenticated, new FindFirstServiceController().handle)
 

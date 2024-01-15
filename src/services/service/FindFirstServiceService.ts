@@ -12,7 +12,13 @@ export class FindFirstServiceService {
                         select: {
                             id: true,
                             plate: true,
-                            description: true
+                            description: true,
+                            image: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
+                            }
                         }
                     },
                     price: true,
