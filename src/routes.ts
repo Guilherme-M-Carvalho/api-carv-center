@@ -23,4 +23,13 @@ router.get("/api/service/:id", isAuthenticated, new FindFirstServiceController()
 
 router.get("/api/car/:plate", isAuthenticated, new FindByPlateCarController().handle)
 
+router.post("/api/files", isAuthenticated, upload.fields([{name: "car"}, {name: "service"}]), (req, res) => {
+    console.log(JSON.parse(req.body.teste), req.files);
+    return res.send({
+        ok: "teste"
+    })
+})
+
+
+
 export { router }
