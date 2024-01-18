@@ -86,9 +86,7 @@ export class CreateServiceService {
                     description: car.description,
                     plate: car.plate.toUpperCase(),
                     image: {
-                        create: files?.vehicle?.map((vehicle) => {
-                            console.log(vehicle, 'vehiclevehicle');
-                            
+                        create: Array.from(files?.vehicle)?.map((vehicle: any) => {
                             return {
                                 name: vehicle?.filename
                             }
@@ -109,10 +107,10 @@ export class CreateServiceService {
                 }
             })
             const createImage: { name: string }[] = []
-            car.image?.forEach(({ name, id }) => {
-                if (!existCar.image?.find(img => img.id == id)) {
-                    createImage.push({ name })
-                }
+            Array.from(files?.vehicle)?.forEach((vehicle: any) => {
+                // if (!existCar.image?.find(img => img.id == id)) {
+                    createImage.push({ name: vehicle?.filename })
+                // }
             })
 
             const dataCar = {
@@ -121,20 +119,20 @@ export class CreateServiceService {
                     createMany: {
                         data: createImage
                     },
-                    deleteMany: {
-                        id: {
-                            in: deleteImage
-                        }
-                    }
+                    // deleteMany: {
+                    //     id: {
+                    //         in: deleteImage
+                    //     }
+                    // }
                 }
             }
 
             if (!createImage.length) {
                 delete dataCar.image.createMany
             }
-            if (!deleteImage.length) {
-                delete dataCar.image.deleteMany
-            }
+            // if (!deleteImage.length) {
+            //     delete dataCar.image.deleteMany
+            // }
             if (!deleteImage.length && !createImage.length) {
                 delete dataCar.image
             }
@@ -189,6 +187,10 @@ export class CreateServiceService {
             return service
 
         } catch (err) {
+            console.log({
+                err
+            });
+            
             throw new Error("Internal error");
         }
 

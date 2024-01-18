@@ -5,8 +5,11 @@ import cors from "cors"
 import path from "path"
 
 const app = express();
-
-app.use(express.json());
+// app.use(formidable());
+app.use(express.json()); // Used to parse JSON bodies
+app.use(express.urlencoded()); // Parse URL-encoded bodies using query-string library
+// or
+app.use(express.urlencoded({ extended: true }))
 app.use(cors({
      origin: "*"
 }));

@@ -4,8 +4,9 @@ import { CreateServiceService } from "../../services/service/CreateServiceServic
 export class CreateServiceController {
     async handle(req: Request, res: Response) {
 
-
         const { car, serviceDetail } = req.body
+        const files= req.files as any
+        console.log("aquiii", JSON.parse(car), JSON.parse(serviceDetail), files?.vehicle);
 
         const createServiceService = new CreateServiceService()
 
