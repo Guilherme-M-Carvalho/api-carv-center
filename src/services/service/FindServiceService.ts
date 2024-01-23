@@ -9,7 +9,15 @@ export class FindServiceService {
                         select: {
                             id: true,
                             plate: true,
-                            description: true
+                            description: true,
+                            image: {
+                                select: {
+                                    name: true
+                                },
+                                where: {
+                                    deleted: false
+                                }
+                            }
                         }
                     },
                     price: true,
@@ -23,10 +31,21 @@ export class FindServiceService {
                                 select: {
                                     id: true,
                                     name: true,
+                                },
+                                where: {
+                                    deleted: false
                                 }
                             }
+                        },
+                        where: {
+                            deleted: false
                         }
-                    }
+                    },
+                    updated_at: true,
+                    created_at: true
+                },
+                where: {
+                    deleted: false
                 }
             })
         } catch (error) {

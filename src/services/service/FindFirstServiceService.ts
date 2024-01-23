@@ -5,7 +5,8 @@ export class FindFirstServiceService {
         try {
             return await prismaClient.serviceCar.findFirst({
                 where: {
-                    id: id
+                    id: id,
+                    deleted: false
                 },
                 select: {
                     car: {
@@ -16,10 +17,16 @@ export class FindFirstServiceService {
                             image: {
                                 select: {
                                     id: true,
-                                    name: true
+                                    name: true,
+                                    deleted: true
+                                },
+                                where: {
+                                    deleted: false
                                 }
-                            }
-                        }
+                            },
+
+                        },
+                        
                     },
                     price: true,
                     id: true,
@@ -28,15 +35,25 @@ export class FindFirstServiceService {
                             description: true,
                             id: true,
                             price: true,
+                            deleted: true,
                             image: {
                                 select: {
                                     id: true,
                                     name: true,
-                                    before: true
+                                    before: true,
+                                    deleted: true
+                                },
+                                where: {
+                                    deleted: false
                                 }
                             }
+                        },
+                        where: {
+                            deleted: false
                         }
-                    }
+                    },
+                    created_at: true,
+                    updated_at: true
                 }
             })
         } catch (error) {

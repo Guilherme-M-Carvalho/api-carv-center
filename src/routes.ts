@@ -9,6 +9,9 @@ import { FindByPlateCarController } from "./controllers/car/FindByPlateCarContro
 import { FindFirstServiceController } from "./controllers/service/FindFirstServiceController";
 import uploadConfig from "./config/multer";
 import multer from "multer";
+import { DeleteServiceController } from "./controllers/service/DeleteServiceController";
+import { UpdateServiceController } from "./controllers/service/UpdateServiceController";
+import { GenerateOsController } from "./controllers/service/GenerateOsController";
 
 const router = Router();
 const upload = multer(uploadConfig.upload("./uploads"))
@@ -20,15 +23,11 @@ router.get("/api/user/:id", isAuthenticated, new DetailUserController().handle)
 router.post("/api/service", isAuthenticated, upload.fields([{name: "vehicle"}, {name: "service"}]), new CreateServiceController().handle)
 router.get("/api/service", isAuthenticated, new FindServiceController().handle)
 router.get("/api/service/:id", isAuthenticated, new FindFirstServiceController().handle)
+router.delete("/api/service/:id", isAuthenticated, new DeleteServiceController().handle)
+router.put("/api/service/:id", isAuthenticated, upload.fields([{name: "vehicle"}, {name: "service"}]), new UpdateServiceController().handle)
+router.get("/api/service/os/:id", isAuthenticated, new GenerateOsController().handle)
 
 router.get("/api/car/:plate", isAuthenticated, new FindByPlateCarController().handle)
-
-router.post("/api/files", isAuthenticated, upload.fields([{name: "vehicle"}, {name: "service"}]), (req, res) => {
-    console.log(JSON.parse(req.body.teste), req.files);
-    return res.send({
-        ok: "teste"
-    })
-})
 
 
 

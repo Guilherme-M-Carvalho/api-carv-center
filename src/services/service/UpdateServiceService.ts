@@ -1,5 +1,4 @@
 import prismaClient from "../../prisma";
-import { CreateCarService } from "../car/CreateCarService";
 
 export interface ServiceProps {
     car?: Car
@@ -19,7 +18,8 @@ export interface Car {
 export interface ServiceDetail {
     id?: number
     price: number
-    description: string
+    description: string;
+    deleted?: boolean;
     image?: Image[]
 }
 
@@ -28,17 +28,31 @@ export interface Image {
     name: string
     service_detail_id?: number
     car_id?: number
-    before?: boolean
+    before?: boolean;
+    deleted?: boolean;
 }
 
-export class CreateServiceService {
+export class UpdateServiceService {
     async execute({
         car,
         serviceDetail,
-        files
+        files,
+        id
     }: ServiceProps) {
-        
+
         const { plate } = car
+
+        const existService = await prismaClient.serviceCar.findFirst({
+            where: {
+                id: id
+            }
+        })
+
+        if(!existService){
+            throw new Error('{"message": "Serviço não existe!"}');
+            
+        }
+
         const existCar = await prismaClient.car.findFirst({
             where: {
                 plate: plate,
@@ -52,6 +66,9 @@ export class CreateServiceService {
                     select: {
                         id: true,
                         name: true,
+                    },
+                    where: {
+                        deleted: false
                     }
                 }
             }
@@ -60,27 +77,80 @@ export class CreateServiceService {
         const priceTotal = serviceDetail.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
 
         let indexFile = 0
-        
+
+        const serviceDetailCreate = []
+        const serviceDetailUpdate = []
+
+        serviceDetail?.forEach(({ description, image, price, id, deleted }, index) => {
+            if (!id) {
+                serviceDetailCreate.push({
+                    description: description,
+                    image: {
+                        create: image.map(({ name, before }, index) => {
+                            const fileName = files.service[indexFile]?.filename
+                            indexFile++
+
+                            return {
+                                name: fileName,
+                                before: before
+                            }
+                        })
+                    },
+                    price: price
+                })
+            } else {
+                const imageCreate = []
+                const imageUpdate = []
+
+                image.forEach(({ name, before, id, deleted }, index) => {
+                    const fileName = files.service[indexFile]?.filename
+                    if (!id) {
+                        indexFile++
+                        imageCreate.push({
+                            name: fileName,
+                            before: before,
+                            id
+                        })
+                    } else {
+
+                        imageUpdate.push({
+                            data: {
+                                name: name,
+                                before: before,
+                                deleted,
+                                id
+                            },
+                            where: {
+                                id: id
+                            }
+                        })
+
+                    }
+                })
+
+                serviceDetailUpdate.push({
+                    data: {
+                        description: description,
+                        image: {
+                            create: imageCreate,
+                            update: imageUpdate
+                        },
+                        price: price,
+                        deleted: !!deleted,
+                        id
+                    },
+                    where: {
+                        id: id
+                    }
+                })
+            }
+        })
+
         const data: any = {
             price: Number(priceTotal),
             serviceDetail: {
-                create: serviceDetail?.map(({ description, image, price }, index) => {
-                    return {
-                        description: description,
-                        image: {
-                            create: image.map(({ name, before }, index) => {
-                                const fileName = files.service[indexFile]?.filename
-                                indexFile++
-
-                                return {
-                                    name: fileName,
-                                    before: before
-                                }
-                            })
-                        },
-                        price: price
-                    }
-                })
+                create: serviceDetailCreate,
+                update: serviceDetailUpdate
             },
             car: {
                 create: {
@@ -98,19 +168,18 @@ export class CreateServiceService {
         }
 
         if (existCar) {
-            delete data.car
             data.car_id = existCar.id
 
             const deleteImage: number[] = []
             existCar.image?.forEach(({ id }) => {
-                if (!car.image?.find(img => img.id == id)) {
+                if (!car.image?.find(img => img.id == id) || car.image?.find(img => img.id == id).deleted) {
                     deleteImage.push(Number(id))
                 }
             })
             const createImage: { name: string }[] = []
             Array.from(files?.vehicle)?.forEach((vehicle: any) => {
                 // if (!existCar.image?.find(img => img.id == id)) {
-                    createImage.push({ name: vehicle?.filename })
+                createImage.push({ name: vehicle?.filename })
                 // }
             })
 
@@ -120,6 +189,16 @@ export class CreateServiceService {
                     createMany: {
                         data: createImage
                     },
+                    updateMany: {
+                        data: {
+                            deleted: true,
+                        },
+                        where: {
+                            id: {
+                                in: deleteImage
+                            }
+                        }
+                    }
                     // deleteMany: {
                     //     id: {
                     //         in: deleteImage
@@ -131,9 +210,9 @@ export class CreateServiceService {
             if (!createImage.length) {
                 delete dataCar.image.createMany
             }
-            // if (!deleteImage.length) {
-            //     delete dataCar.image.deleteMany
-            // }
+            if (!deleteImage.length) {
+                delete dataCar.image.updateMany
+            }
             if (!deleteImage.length && !createImage.length) {
                 delete dataCar.image
             }
@@ -148,10 +227,12 @@ export class CreateServiceService {
             } catch (error) {
                 throw new Error("Internal error");
             }
+            delete data.car
+
         }
 
         try {
-            const service = await prismaClient.serviceCar.create({
+            const service = await prismaClient.serviceCar.update({
                 data: data,
                 select: {
                     car: {
@@ -183,15 +264,19 @@ export class CreateServiceService {
                         }
                     },
                     id: true
+                },
+                where: {
+                    id: id
                 }
             })
+            
             return service
 
         } catch (err) {
             console.log({
                 err
             });
-            
+
             throw new Error("Internal error");
         }
 

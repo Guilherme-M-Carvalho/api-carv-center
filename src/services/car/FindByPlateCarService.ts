@@ -7,7 +7,8 @@ export class FindByPlateCarService {
         try {
             car = await prismaClient.car.findFirst({
                 where: {
-                    plate: plate.toUpperCase()
+                    plate: plate.toUpperCase(),
+                    deleted: false
                 },
                 select: {
                     id: true,
@@ -17,6 +18,9 @@ export class FindByPlateCarService {
                         select: {
                             id: true,
                             name: true,
+                        },
+                        where: {
+                            deleted: false
                         }
                     }
                 }
