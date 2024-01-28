@@ -43,7 +43,7 @@ export class GenerateOsService {
     async execute({ id }: { id: number }) {
         const findService = new FindFirstServiceService()
         console.log("find");
-        
+
         const service = await findService.execute({ id });
         let rowsTable = ""
         service.serviceDetail.forEach(el => {
@@ -52,7 +52,7 @@ export class GenerateOsService {
                 ${el.description}
             </td>
             <td>
-                R$: ${el.price}
+                ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(el.price))}
             </td>
         </tr>`
         })
@@ -90,7 +90,8 @@ export class GenerateOsService {
                     <p>Data: ${new Intl.DateTimeFormat('pt-BR', {
             dateStyle: 'short',
             timeStyle: 'medium',
-        }).format(new Date(service?.created_at))}</p>
+            timeZone: 'GMT'
+        }).format(new Date(service?.updated_at))}</p>
                 </div>
             </div>
             <div
@@ -141,7 +142,7 @@ export class GenerateOsService {
                                 </div>
                             </td>
                             <td>
-                                R$: ${service.price}
+                                ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(service.price))}
                             </td>
                         </tr>
                     </tbody>

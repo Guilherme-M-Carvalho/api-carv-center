@@ -6,6 +6,6 @@ export class GenerateOsController {
         const id = req.params.id
         const service = new GenerateOsService()
         const pdf = await service.execute({ id: Number(id) })
-        return res.send({pdf})
+        return res.send({ pdf })
     }
 }

@@ -12,6 +12,8 @@ import multer from "multer";
 import { DeleteServiceController } from "./controllers/service/DeleteServiceController";
 import { UpdateServiceController } from "./controllers/service/UpdateServiceController";
 import { GenerateOsController } from "./controllers/service/GenerateOsController";
+import { FindServiceByDateController } from "./controllers/service/FindServiceByDateController";
+import { FindServiceReportController } from "./controllers/service/FindServiceReportController";
 
 const router = Router();
 const upload = multer(uploadConfig.upload("./uploads"))
@@ -20,12 +22,14 @@ router.post("/api/session", new AuthUserController().handle)
 router.post("/api/user", new CreateUserController().handle)
 router.get("/api/user/:id", isAuthenticated, new DetailUserController().handle)
 
+router.get("/api/service/report", isAuthenticated, new FindServiceReportController().handle)
 router.post("/api/service", isAuthenticated, upload.fields([{name: "vehicle"}, {name: "service"}]), new CreateServiceController().handle)
 router.get("/api/service", isAuthenticated, new FindServiceController().handle)
 router.get("/api/service/:id", isAuthenticated, new FindFirstServiceController().handle)
 router.delete("/api/service/:id", isAuthenticated, new DeleteServiceController().handle)
 router.put("/api/service/:id", isAuthenticated, upload.fields([{name: "vehicle"}, {name: "service"}]), new UpdateServiceController().handle)
 router.get("/api/service/os/:id", isAuthenticated, new GenerateOsController().handle)
+router.get("/api/service/date/:date", isAuthenticated, new FindServiceByDateController().handle)
 
 router.get("/api/car/:plate", isAuthenticated, new FindByPlateCarController().handle)
 
