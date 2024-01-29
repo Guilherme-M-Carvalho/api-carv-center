@@ -14,13 +14,24 @@ export interface Car {
     description: string
     plate: string
     image: Image[]
+    client: {
+        id?: number;
+        name: string;
+        phone: number
+    }
 }
 
 export interface ServiceDetail {
     id?: number
     price: number
-    description: string
+    obs?: string
+    description?: string
     image?: Image[]
+    customerParts: boolean
+    typeService: number
+    parts: PartsProps[];
+    deleted?: boolean;
+
 }
 
 export interface Image {
@@ -31,14 +42,29 @@ export interface Image {
     before?: boolean
 }
 
+type PartsProps = {
+    id?: number
+    name: string;
+    price: number;
+    deleted?: boolean;
+}
+
 export class CreateServiceService {
     async execute({
         car,
         serviceDetail,
         files
     }: ServiceProps) {
-        
+
         const { plate } = car
+
+        const existClient = await prismaClient.client.findFirst({
+            where: {
+                phone: car.client.phone,
+                deleted: false
+            }
+        })
+
         const existCar = await prismaClient.car.findFirst({
             where: {
                 plate: plate,
@@ -57,14 +83,22 @@ export class CreateServiceService {
             }
         })
 
-        const priceTotal = serviceDetail.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
+        let partPrice = 0
+        const serviceDetailFilter = serviceDetail.filter(el => el?.parts?.length && !el.customerParts && !el.deleted)
+        serviceDetailFilter.forEach(el => {
+            if(el.parts){
+                const parts = el.parts.filter(el => !el.deleted)
+                partPrice += parts?.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
+            }
+        })
+        const priceTotal = serviceDetail.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0) + partPrice;
 
         let indexFile = 0
-        
+
         const data: any = {
             price: Number(priceTotal),
             serviceDetail: {
-                create: serviceDetail?.map(({ description, image, price }, index) => {
+                create: serviceDetail?.map(({ description, image, price, customerParts, typeService, obs, parts }, index) => {
                     return {
                         description: description,
                         image: {
@@ -73,12 +107,23 @@ export class CreateServiceService {
                                 indexFile++
 
                                 return {
-                                    name: fileName,
+                                    name: fileName ? fileName : "",
                                     before: before
                                 }
                             })
                         },
-                        price: price
+                        price: price,
+                        customerParts: customerParts,
+                        type_service_id: !!typeService ? typeService : undefined,
+                        obs: obs,
+                        parts: {
+                            create: parts.map(({name, price}) => {
+                            return {
+                                description: name,
+                                price: price
+
+                            }
+                        })}
                     }
                 })
             },
@@ -92,9 +137,21 @@ export class CreateServiceService {
                                 name: vehicle?.filename
                             }
                         })
+                    },
+                    client: {
+                        create: {
+                            name: car.client.name,
+                            phone: car.client.phone
+                        }
                     }
-                }
-            }
+                },
+            },
+
+        }
+
+        if(existClient){
+            delete data.car.create.client
+            data.car.create.client_id = existClient.id
         }
 
         if (existCar) {
@@ -110,7 +167,7 @@ export class CreateServiceService {
             const createImage: { name: string }[] = []
             Array.from(files?.vehicle)?.forEach((vehicle: any) => {
                 // if (!existCar.image?.find(img => img.id == id)) {
-                    createImage.push({ name: vehicle?.filename })
+                createImage.push({ name: vehicle?.filename })
                 // }
             })
 
@@ -120,20 +177,12 @@ export class CreateServiceService {
                     createMany: {
                         data: createImage
                     },
-                    // deleteMany: {
-                    //     id: {
-                    //         in: deleteImage
-                    //     }
-                    // }
                 }
             }
 
             if (!createImage.length) {
                 delete dataCar.image.createMany
             }
-            // if (!deleteImage.length) {
-            //     delete dataCar.image.deleteMany
-            // }
             if (!deleteImage.length && !createImage.length) {
                 delete dataCar.image
             }
@@ -191,7 +240,7 @@ export class CreateServiceService {
             console.log({
                 err
             });
-            
+
             throw new Error("Internal error");
         }
 

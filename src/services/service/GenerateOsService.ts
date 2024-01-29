@@ -42,17 +42,28 @@ td {
 export class GenerateOsService {
     async execute({ id }: { id: number }) {
         const findService = new FindFirstServiceService()
-        console.log("find");
-
         const service = await findService.execute({ id });
         let rowsTable = ""
         service.serviceDetail.forEach(el => {
+            let description = el.description
+            let partPrice = Number(el.price)
+            if(el.type_service_id){
+                description = el.typeService.description
+            }
+            if(el.parts.length){
+                let subTitle = el?.parts?.reduce((accumulator: string, currentValue, index: number) => {
+                    const addString = (el?.parts?.length > 1 && index != el?.parts?.length - 1 ? ", " : "")
+                    return String(accumulator) + currentValue.description + addString
+                }, " ")
+                partPrice += el?.parts?.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
+                description += `, ${subTitle}`
+            }
             rowsTable += `<tr>
             <td colspan="4">
-                ${el.description}
+                ${description}
             </td>
             <td>
-                ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(el.price))}
+                ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(partPrice))}
             </td>
         </tr>`
         })
@@ -91,7 +102,7 @@ export class GenerateOsService {
             dateStyle: 'short',
             timeStyle: 'medium',
             timeZone: 'GMT'
-        }).format(new Date(service?.updated_at))}</p>
+        }).format(new Date(service?.created_at))}</p>
                 </div>
             </div>
             <div

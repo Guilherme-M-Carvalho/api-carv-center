@@ -13,14 +13,23 @@ export interface Car {
     description: string
     plate: string
     image: Image[]
+    client: {
+        id?: number;
+        name: string;
+        phone: number
+    }
 }
 
 export interface ServiceDetail {
     id?: number
     price: number
-    description: string;
-    deleted?: boolean;
+    obs?: string
+    description?: string;
+    deleted: boolean;
     image?: Image[]
+    customerParts: boolean
+    typeService: number
+    parts: PartsProps[];
 }
 
 export interface Image {
@@ -28,10 +37,17 @@ export interface Image {
     name: string
     service_detail_id?: number
     car_id?: number
-    before?: boolean;
-    deleted?: boolean;
+    before?: boolean
+    deleted: boolean;
 }
 
+type PartsProps = {
+    id?: number
+    name: string;
+    price: number;
+    deleted: boolean;
+
+}
 export class UpdateServiceService {
     async execute({
         car,
@@ -48,9 +64,9 @@ export class UpdateServiceService {
             }
         })
 
-        if(!existService){
+        if (!existService) {
             throw new Error('{"message": "Serviço não existe!"}');
-            
+
         }
 
         const existCar = await prismaClient.car.findFirst({
@@ -73,16 +89,24 @@ export class UpdateServiceService {
                 }
             }
         })
-
-        const priceTotal = serviceDetail.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
+        
+        let partPrice = 0
+        const serviceDetailFilter = serviceDetail.filter(el => el?.parts?.length && !el.customerParts && !el.deleted)
+        serviceDetailFilter.forEach(el => {
+            if(el.parts){
+                const parts = el.parts.filter(el => !el.deleted)
+                partPrice += parts?.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
+            }
+        })
+        const priceTotal = serviceDetail.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0) + partPrice;
 
         let indexFile = 0
 
         const serviceDetailCreate = []
         const serviceDetailUpdate = []
 
-        serviceDetail?.forEach(({ description, image, price, id, deleted }, index) => {
-            if (!id) {
+        serviceDetail?.forEach(({ description, image, price, id, deleted, parts, customerParts,typeService, obs }, index) => {
+            if (!id && !customerParts) {
                 serviceDetailCreate.push({
                     description: description,
                     image: {
@@ -96,11 +120,48 @@ export class UpdateServiceService {
                             }
                         })
                     },
-                    price: price
+                    parts: {
+                        create: parts ? parts?.map(({ name, price, deleted }, index) => {
+                            return {
+                                description: name,
+                                price: price,
+                                deleted: deleted
+                            }
+                        }) : []
+                    },
+                    price: price,
+                    type_service_id: !!typeService ? typeService : undefined,
+                    customerParts: customerParts,
+                    obs: obs,
                 })
             } else {
                 const imageCreate = []
                 const imageUpdate = []
+                const partsCreate = []
+                const partsUpdate = []
+
+                if(parts){
+                    parts?.forEach(({ name, price, id, deleted }, index) => {
+                        if (!id && !customerParts) {
+                            partsCreate.push({
+                                description: name,
+                                price: price
+                            })
+                        } else if(id) {
+                            partsUpdate.push({
+                                data: {
+                                    description: name,
+                                    price: price,
+                                    deleted: customerParts ? customerParts : deleted
+                                },
+                                where: {
+                                    id: id
+                                }
+                            })
+                        }
+                    })
+                }
+
 
                 image.forEach(({ name, before, id, deleted }, index) => {
                     const fileName = files.service[indexFile]?.filename
@@ -135,9 +196,16 @@ export class UpdateServiceService {
                             create: imageCreate,
                             update: imageUpdate
                         },
+                        parts: {
+                            create: partsCreate,
+                            update: partsUpdate
+                        },
                         price: price,
                         deleted: !!deleted,
-                        id
+                        id,
+                        type_service_id: !!typeService ? typeService : undefined,
+                        customerParts: customerParts,
+                        obs: obs,
                     },
                     where: {
                         id: id
@@ -269,7 +337,7 @@ export class UpdateServiceService {
                     id: id
                 }
             })
-            
+
             return service
 
         } catch (err) {

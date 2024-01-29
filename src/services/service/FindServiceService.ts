@@ -17,6 +17,13 @@ export class FindServiceService {
                                 where: {
                                     deleted: false
                                 }
+                            },
+                            client: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    phone: true
+                                }
                             }
                         }
                     },
@@ -35,6 +42,12 @@ export class FindServiceService {
                                 where: {
                                     deleted: false
                                 }
+                            },
+                            typeService: {
+                                select: {
+                                    id: true,
+                                    description: true
+                                },
                             }
                         },
                         where: {

@@ -13,7 +13,9 @@ app.use(express.urlencoded({ extended: true }))
 app.use(cors({
      origin: "*"
 }));
-
+(<any>BigInt).prototype.toJSON = function () {
+     return this.toString()
+}
 
 app.use(router)
 
@@ -22,7 +24,7 @@ app.use("/files", express.static(path.resolve(__dirname, "..", "uploads")))
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
      if (err instanceof Error) {
           console.log("aqui", err);
-          
+
           try {
                JSON.parse(err.message)
           } catch (error) {
@@ -30,7 +32,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
                     error: err.message, failed: true
                });
           }
-          return res.status(200).json({...JSON.parse(err.message), failed: true});
+          return res.status(200).json({ ...JSON.parse(err.message), failed: true });
      }
 
      return res.status(500).json({

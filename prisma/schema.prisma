@@ -22,6 +22,18 @@ model User {
   @@map("cad_user")
 }
 
+model Client {
+  id         Int       @id @default(autoincrement())
+  name       String
+  phone      BigInt       @db.BigInt() @unique
+  deleted    Boolean   @default(false)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+  car        Car[]
+
+  @@map("cad_client")
+}
+
 model Car {
   id          Int          @id @default(autoincrement())
   description String
@@ -31,6 +43,9 @@ model Car {
   deleted     Boolean      @default(false)
   services    ServiceCar[]
   image       Image[]
+
+  client    Client @relation(fields: [client_id], references: [id])
+  client_id Int
 
   @@map("cad_car")
 }
@@ -50,16 +65,22 @@ model ServiceCar {
 }
 
 model ServiceDetailCar {
-  id          Int       @id @default(autoincrement())
-  description String
-  price       Decimal   @db.Decimal(9, 2)
-  deleted     Boolean   @default(false)
-  created_at  DateTime? @default(now())
-  updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+  id            Int       @id @default(autoincrement())
+  description   String?
+  price         Decimal   @db.Decimal(9, 2)
+  deleted       Boolean   @default(false)
+  created_at    DateTime? @default(now())
+  updated_at    DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+  customerParts Boolean   @default(true)
+  obs           String?   @db.Text()
+
+  typeService     TypeService? @relation(fields: [type_service_id], references: [id])
+  type_service_id Int?
 
   service    ServiceCar @relation(fields: [service_id], references: [id])
   service_id Int
   image      Image[]
+  parts      Parts[]
 
   @@map("cad_service_detail")
 }
@@ -79,4 +100,30 @@ model Image {
   car_id Int?
 
   @@map("cad_image")
+}
+
+model Parts {
+  id          Int       @id @default(autoincrement())
+  description String
+  price       Decimal   @db.Decimal(9, 2)
+  deleted     Boolean   @default(false)
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+
+  serviceDetail     ServiceDetailCar? @relation(fields: [service_detail_id], references: [id])
+  service_detail_id Int?
+
+  @@map("cad_parts")
+}
+
+model TypeService {
+  id          Int       @id @default(autoincrement())
+  description String
+  deleted     Boolean   @default(false)
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+
+  serviceDetail ServiceDetailCar[]
+
+  @@map("lst_type_service")
 }

@@ -14,6 +14,13 @@ export class FindByPlateCarService {
                     id: true,
                     plate: true,
                     description: true,
+                    client: {
+                        select: {
+                            id: true,
+                            name: true,
+                            phone: true
+                        }
+                    },
                     image: {
                         select: {
                             id: true,
