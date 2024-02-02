@@ -3,8 +3,6 @@ import { FindServiceReportService } from "../../services/service/FindServiceRepo
 
 export class FindServiceReportController {
     async handle(req: Request, res: Response) {
-        console.log("aaa");
-        
         const start = req.query?.start
         const end = req.query?.end
 

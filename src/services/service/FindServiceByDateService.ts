@@ -6,7 +6,14 @@ export class FindServiceByDateService {
         const daateSearchEnd= new Date(date+" 20:59")
         
         try {
-            const services = await prismaClient.serviceCar.findMany({
+            const services = await prismaClient.serviceDetailCar.findMany({
+                select: {
+                    id: true,
+                    deleted: true,
+                    description: true,
+                    parts: true,
+                    price: true,
+                },
                 where: {
                     created_at: {
                         lte: daateSearchEnd,
@@ -16,7 +23,7 @@ export class FindServiceByDateService {
             })
             const data = {
                 count: services.length,
-                total: services.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0)
+                total: services.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price) + (currentValue.parts.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0)), 0)
             }
             return data
         } catch (error) {   

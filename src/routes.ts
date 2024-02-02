@@ -14,6 +14,12 @@ import { UpdateServiceController } from "./controllers/service/UpdateServiceCont
 import { GenerateOsController } from "./controllers/service/GenerateOsController";
 import { FindServiceByDateController } from "./controllers/service/FindServiceByDateController";
 import { FindServiceReportController } from "./controllers/service/FindServiceReportController";
+import { FindCostController } from "./controllers/cost/FindCostController";
+import { FindFirstCostController } from "./controllers/cost/FindFirstCostController";
+import { DeleteCostController } from "./controllers/cost/DeleteCostController";
+import { UpdateCostController } from "./controllers/cost/UpdateCostController";
+import { CreateCostController } from "./controllers/cost/CreateCostController";
+import { FindTypeServiceController } from "./controllers/typeService/FindTypeServiceController";
 
 const router = Router();
 const upload = multer(uploadConfig.upload("./uploads"))
@@ -33,6 +39,13 @@ router.get("/api/service/date/:date", isAuthenticated, new FindServiceByDateCont
 
 router.get("/api/car/:plate", isAuthenticated, new FindByPlateCarController().handle)
 
+router.get("/api/cost", isAuthenticated, new FindCostController().handle)
+router.get("/api/cost/:id", isAuthenticated, new FindFirstCostController().handle)
+router.delete("/api/cost/:id", isAuthenticated, new DeleteCostController().handle)
+router.put("/api/cost", isAuthenticated, new UpdateCostController().handle)
+router.post("/api/cost", isAuthenticated, new CreateCostController().handle)
+
+router.get("/api/typeService", isAuthenticated, new FindTypeServiceController().handle)
 
 
 export { router }

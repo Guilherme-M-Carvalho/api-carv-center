@@ -25,7 +25,7 @@ model User {
 model Client {
   id         Int       @id @default(autoincrement())
   name       String
-  phone      BigInt       @db.BigInt() @unique
+  phone      BigInt    @unique @db.BigInt()
   deleted    Boolean   @default(false)
   created_at DateTime? @default(now())
   updated_at DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
@@ -126,4 +126,17 @@ model TypeService {
   serviceDetail ServiceDetailCar[]
 
   @@map("lst_type_service")
+}
+
+model Cost {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.Text()
+  description String?    @db.Text()
+  amount      BigInt    @db.BigInt()
+  price       Decimal   @db.Decimal(9, 2)
+  deleted     Boolean   @default(false)
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+
+  @@map("cad_cost")
 }

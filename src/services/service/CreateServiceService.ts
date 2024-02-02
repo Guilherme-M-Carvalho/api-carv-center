@@ -117,13 +117,13 @@ export class CreateServiceService {
                         type_service_id: !!typeService ? typeService : undefined,
                         obs: obs,
                         parts: {
-                            create: parts.map(({name, price}) => {
+                            create: parts ? parts?.map(({name, price}) => {
                             return {
                                 description: name,
                                 price: price
 
                             }
-                        })}
+                        }) : []}
                     }
                 })
             },
