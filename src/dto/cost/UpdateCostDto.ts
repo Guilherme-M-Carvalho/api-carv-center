@@ -4,6 +4,7 @@ type CostProps = {
     description?: string;
     amount: number;
     price: number;
+    priceResale: number;
     deleted?: boolean;
     created_at?: Date;
     updated_at?: Date;
@@ -14,6 +15,7 @@ export class UpdateCostDto {
         amount,
         name,
         price,
+        priceResale,
         id
     }: CostProps){
         if (!id) {
@@ -27,6 +29,9 @@ export class UpdateCostDto {
         }
         if (!price) {
             throw new Error('{"field": "price", "message": "Preço inválido!"}');
+        }
+        if (!priceResale) {
+            throw new Error('{"field": "priceResale", "message": "Preço de revenda inválido!"}');
         }
     }
 }

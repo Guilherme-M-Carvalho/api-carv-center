@@ -8,20 +8,23 @@ export class CreateCostController{
             amount,
             name,
             price,
-            description
+            description,
+            priceResale
         } = req.body
         const dto = new CreateCostDto()
         const validation = dto.handleValidation({
             amount,
             name,
             price,
+            priceResale
         })
         const service = new CreateCostService()
         const create = await service.execute({
             amount,
             name,
             price,
-            description
+            description,
+            priceResale
         })
         return res.send(create)
     }

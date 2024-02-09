@@ -77,10 +77,11 @@ model ServiceDetailCar {
   typeService     TypeService? @relation(fields: [type_service_id], references: [id])
   type_service_id Int?
 
-  service    ServiceCar @relation(fields: [service_id], references: [id])
-  service_id Int
-  image      Image[]
-  parts      Parts[]
+  service     ServiceCar    @relation(fields: [service_id], references: [id])
+  service_id  Int
+  image       Image[]
+  parts       Parts[]
+  costProduct CostProduct[]
 
   @@map("cad_service_detail")
 }
@@ -99,6 +100,9 @@ model Image {
   car    Car? @relation(fields: [car_id], references: [id])
   car_id Int?
 
+  cost    Cost? @relation(fields: [cost_id], references: [id])
+  cost_id Int?
+
   @@map("cad_image")
 }
 
@@ -106,6 +110,7 @@ model Parts {
   id          Int       @id @default(autoincrement())
   description String
   price       Decimal   @db.Decimal(9, 2)
+  priceResale Decimal   @db.Decimal(9, 2)
   deleted     Boolean   @default(false)
   created_at  DateTime? @default(now())
   updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
@@ -131,12 +136,60 @@ model TypeService {
 model Cost {
   id          Int       @id @default(autoincrement())
   name        String    @db.Text()
-  description String?    @db.Text()
-  amount      BigInt    @db.BigInt()
-  price       Decimal   @db.Decimal(9, 2)
+  description String?   @db.Text()
   deleted     Boolean   @default(false)
   created_at  DateTime? @default(now())
   updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
 
+  image       Image[]
+  costHitory  CostHistory[]
+  costProduct CostProduct[]
+
   @@map("cad_cost")
+}
+
+model CostHistory {
+  id          Int       @id @default(autoincrement())
+  amount      BigInt    @db.BigInt()
+  price       Decimal   @db.Decimal(9, 2)
+  priceResale Decimal   @db.Decimal(9, 2)
+  updatePrice Boolean?  @default(false)
+  deleted     Boolean   @default(false)
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+
+  cost    Cost @relation(fields: [cost_id], references: [id])
+  cost_id Int
+
+  @@map("cad_cost_history")
+}
+
+model CostProduct {
+  id          Int       @id @default(autoincrement())
+  price       Decimal   @db.Decimal(9, 2)
+  priceResale Decimal   @db.Decimal(9, 2)
+  created_at  DateTime? @default(now())
+  updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+  deleted     Boolean   @default(false)
+
+  serviceDetail     ServiceDetailCar? @relation(fields: [service_detail_id], references: [id])
+  service_detail_id Int?
+  costResale     CostResale? @relation(fields: [cost_resale_id], references: [id])
+  cost_resale_id Int?
+  cost              Cost              @relation(fields: [cost_id], references: [id])
+  cost_id           Int
+
+  @@map("cad_cost_product")
+}
+
+model CostResale {
+  id         Int       @id @default(autoincrement())
+  price      Decimal   @db.Decimal(9, 2)
+  deleted    Boolean   @default(false)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
+
+  costProduct CostProduct[]
+
+  @@map("cad_cost_resale")
 }

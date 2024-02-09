@@ -9,7 +9,8 @@ export class UpdateCostController {
             amount,
             name,
             price,
-            description
+            description,
+            priceResale
         } = req.body
         
         const dto = new UpdateCostDto()
@@ -18,6 +19,7 @@ export class UpdateCostController {
             amount,
             name,
             price,
+            priceResale
         })
         const service = new UpdateCostService()
         const update = await service.execute({
@@ -25,7 +27,8 @@ export class UpdateCostController {
             amount,
             name,
             price,
-            description
+            description,
+            priceResale
         })
         return res.send(update)
     }

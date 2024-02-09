@@ -5,6 +5,6 @@ export class DeleteServiceController {
     async handle(req: Request, res: Response){
         const service = new DeleteServiceService()
         const deleteService = await service.execute(Number(req.params.id))
-        res.send({message: "Serviço deletado com sucesso!"})
+        return res.send({message: "Serviço deletado com sucesso!"})
     }
 }

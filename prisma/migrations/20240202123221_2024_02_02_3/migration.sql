@@ -1,7 +1,7 @@
 /*
   Warnings:
 
-  - You are about to drop the `cost` table. If the table is not empty, all the data it contains will be lost.
+  - Added the required column `priceResale` to the `cad_cost_history` table without a default value. This is not possible if the table is not empty.
 
 */
 -- AlterTable
@@ -9,6 +9,17 @@ ALTER TABLE `cad_car` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMES
 
 -- AlterTable
 ALTER TABLE `cad_client` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE `cad_cost` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE `cad_cost_history` ADD COLUMN `priceResale` DECIMAL(9, 2) NOT NULL,
+    ADD COLUMN `updatePrice` BOOLEAN NULL DEFAULT false,
+    MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE `cad_cost_product` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
 
 -- AlterTable
 ALTER TABLE `cad_image` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
@@ -27,17 +38,3 @@ ALTER TABLE `cad_user` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIME
 
 -- AlterTable
 ALTER TABLE `lst_type_service` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
-
--- DropTable
-DROP TABLE `cost`;
-
--- CreateTable
-CREATE TABLE `cad_cost` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `description` TEXT NOT NULL,
-    `deleted` BOOLEAN NOT NULL DEFAULT false,
-    `created_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

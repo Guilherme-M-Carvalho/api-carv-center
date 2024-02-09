@@ -1,11 +1,3 @@
-/*
-  Warnings:
-
-  - Added the required column `amount` to the `cad_cost` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `name` to the `cad_cost` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `price` to the `cad_cost` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- AlterTable
 ALTER TABLE `cad_car` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
 
@@ -13,10 +5,13 @@ ALTER TABLE `cad_car` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMES
 ALTER TABLE `cad_client` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
 
 -- AlterTable
-ALTER TABLE `cad_cost` ADD COLUMN `amount` BIGINT NOT NULL,
-    ADD COLUMN `name` TEXT NOT NULL,
-    ADD COLUMN `price` DECIMAL(9, 2) NOT NULL,
-    MODIFY `description` TEXT NULL,
+ALTER TABLE `cad_cost` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE `cad_cost_history` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE `cad_cost_product` ADD COLUMN `cost_resale_id` INTEGER NULL,
     MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
 
 -- AlterTable
@@ -36,3 +31,17 @@ ALTER TABLE `cad_user` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIME
 
 -- AlterTable
 ALTER TABLE `lst_type_service` MODIFY `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3);
+
+-- CreateTable
+CREATE TABLE `cad_cost_resale` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `price` DECIMAL(9, 2) NOT NULL,
+    `deleted` BOOLEAN NOT NULL DEFAULT false,
+    `created_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updated_at` DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `cad_cost_product` ADD CONSTRAINT `cad_cost_product_cost_resale_id_fkey` FOREIGN KEY (`cost_resale_id`) REFERENCES `cad_cost_resale`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
