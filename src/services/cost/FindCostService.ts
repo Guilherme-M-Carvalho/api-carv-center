@@ -27,6 +27,7 @@ export class FindCostService {
                             price: true,
                             priceResale: true,
                             service_detail_id: true,
+                            cost_resale_id: true,
                             created_at: true,
                             updated_at: true
                         }
@@ -37,10 +38,10 @@ export class FindCostService {
             })
 
             return cost.map(el => {
-                const totalSold = el.costProduct.filter(item => !!item.service_detail_id)
+                const totalSold = el.costProduct.filter(item => !!item.service_detail_id || !!item.cost_resale_id)
                 const history = el.costHitory.pop()
                 const totalResale = totalSold.reduce((acc, val) => acc + Number(val.priceResale), 0)
-                const amountStock = el.costProduct.filter(item => !item.service_detail_id)
+                const amountStock = el.costProduct.filter(item => !item.service_detail_id && !item.cost_resale_id)
                 const res = {
                     ...el,
                     totalResale: totalResale,

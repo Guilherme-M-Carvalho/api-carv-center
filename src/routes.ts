@@ -40,7 +40,7 @@ router.get("/api/service/:id", isAuthenticated, new FindFirstServiceController()
 router.delete("/api/service/:id", isAuthenticated, new DeleteServiceController().handle)
 router.put("/api/service/:id", isAuthenticated, upload.fields([{name: "vehicle"}, {name: "service"}]), new UpdateServiceController().handle)
 router.get("/api/service/os/:id", isAuthenticated, new GenerateOsController().handle)
-// router.get("/api/service/date/:date", isAuthenticated, new FindServiceByDateController().handle)
+router.get("/api/service/date/:date", isAuthenticated, new FindServiceByDateController().handle)
 
 router.get("/api/car/:plate", isAuthenticated, new FindByPlateCarController().handle)
 

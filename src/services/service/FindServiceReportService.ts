@@ -38,6 +38,20 @@ export class FindServiceReportService {
                         image: true,
                         price: true,
                         created_at: true,
+                        costProduct: {
+                            select: {
+                                id: true,
+                                price: true,
+                                priceResale: true,
+                                deleted: true,
+                                serviceDetail: true,
+                                service_detail_id: true,
+                                cost_resale_id: true
+                            },
+                            where: {
+                                deleted: false
+                            }
+                        }
                     },
                     where: {
                         created_at: {
@@ -96,6 +110,35 @@ export class FindServiceReportService {
                     }
                 })
 
+                const productResale = await prismaClient.costResale.findMany({
+                    select: {
+                        id: true,
+                        price: true,
+                        costProduct: {
+                            select: {
+                                id: true,
+                                price: true,
+                                priceResale: true,
+                                deleted: true,
+                                serviceDetail: true,
+                                service_detail_id: true,
+                                cost_resale_id: true
+                            },
+                            where: {
+                                deleted: false
+                            }
+                        },
+                        created_at: true
+                    },
+                    where: {
+                        deleted: false,
+                        created_at: {
+                            lte: data.lte,
+                            gte: data.gte,
+                        },
+                    }
+                })
+
                 return {
                     service: service,
                     cost: cost.map(el => {
@@ -108,6 +151,7 @@ export class FindServiceReportService {
                             priceResale: priceResale.reduce((acc, val) => acc + Number(val.price), 0)
                         }
                     }),
+                    productResale: productResale,
                     start: data.gte,
                     end: data.lte
                 }
@@ -135,6 +179,12 @@ export class FindServiceReportService {
                             dates.push(dateFormt)
                         }
                     })
+                    el.productResale.forEach(serv => {
+                        const dateFormt = this.formatDate(new Date(serv.created_at))
+                        if (!dates.find(el => el === dateFormt)) {
+                            dates.push(dateFormt)
+                        }
+                    })
                 })
                 if (dates.length === 1) {
                     const chartProfit: { legend: string; x: number; date: string; y: number; qtd: number }[] = []
@@ -143,6 +193,7 @@ export class FindServiceReportService {
                     const chartPart: { legend: string; x: number; date: string; y: number; qtd: number }[] = []
                     const chartResale: { legend: string; x: number; date: string; y: number; qtd: number }[] = []
                     let resalePrice = 0
+                    let productResalePrice = 0
                     result.forEach(el => {
                         let maxProfit = 0
                         let minProfit = 0
@@ -152,26 +203,43 @@ export class FindServiceReportService {
                         let minPart = 0
                         let maxResale = 0
                         let minResale = 0
-                        resalePrice += el.cost.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.serviceDetail  || !!el.cost_resale_id).reduce((acc, val) => acc + Number(val.priceResale), 0)), 0)
-
+                        resalePrice += el.service.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.service_detail_id).reduce((acc, val) => acc + Number(val.priceResale), 0)), 0)
+                        productResalePrice += el.productResale.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.cost_resale_id).reduce((acc, val) => acc + Number(val.priceResale), 0)), 0)
+                        resalePrice += productResalePrice
+                        let countResale = 1
                         el.service.forEach((serv, i) => {
+                            const resaleCost = serv.costProduct.filter(el => !!el.serviceDetail) // deve ser feito pelo serviço
+                            const resalePrice = resaleCost.reduce((acc, val) => acc + Number(val.priceResale), 0) // deve ser feito pelo serviço
+
                             const y = serv?.parts?.reduce((accumalator, value) => accumalator + Number(value.price), 0)
                             chartPart.push({ legend: "Peças", qtd: serv?.parts?.length, x: i + 1, date: this.formatDate(new Date(serv.created_at)), y: y })
-                            chartProfit.push({ legend: "Mão de obra (Bruto)", x: i + 1, date: this.formatDate(new Date(serv.created_at)), y: (Number(serv.price)), qtd: 1 })
+                            chartProfit.push({ legend: "Lucro (Bruto)", x: i + 1, date: this.formatDate(new Date(serv.created_at)), y: (Number(serv.price)), qtd: 1 })
+                            chartResale.push({ legend: "Venda (Produtos)", x: countResale, date: this.formatDate(new Date(serv.created_at)), y: Number(resalePrice), qtd: Number(resaleCost.length) }) // deve ser feito pelo serviço
+                            countResale++
                             maxProfit = this.validationMax(maxProfit, Number(serv.price))
                             minProfit = this.validationMin(minProfit, Number(serv.price))
                             maxPart = this.validationMax(maxPart, Number(y))
                             minPart = this.validationMin(minPart, Number(y))
+                            maxResale = this.validationMax(maxResale, Number(resalePrice)) // deve ser feito pelo serviço
+                            minResale = this.validationMin(minResale, Number(resalePrice)) // deve ser feito pelo serviço
                         })
                         el.cost.forEach((serv, i) => {
-                            const resaleCost = serv.costProduct.filter(el => !!el.serviceDetail || !!el.cost_resale_id)
-                            const resalePrice = resaleCost.reduce((acc, val) => acc + Number(val.priceResale), 0)
+                            // const resaleCost = serv.costProduct.filter(el => !!el.serviceDetail) // deve ser feito pelo serviço
+                            // const resalePrice = resaleCost.reduce((acc, val) => acc + Number(val.priceResale), 0) // deve ser feito pelo serviço
                             chartCost.push({ legend: "Custo", x: (i + 1), date: this.formatDate(new Date(serv.created_at)), y: Number(serv.price), qtd: Number(serv.amount) })
-                            chartResale.push({ legend: "Revenda", x: (i + 1), date: this.formatDate(new Date(serv.created_at)), y: Number(resalePrice), qtd: Number(resaleCost.length) })
+                            // chartResale.push({ legend: "Venda (Produtos)", x: (i + 1), date: this.formatDate(new Date(serv.created_at)), y: Number(resalePrice), qtd: Number(resaleCost.length) }) // deve ser feito pelo serviço
                             maxCost = this.validationMax(maxCost, Number(serv.price))
                             minCost = this.validationMin(minCost, Number(serv.price))
+                            // maxResale = this.validationMax(maxResale, Number(resalePrice)) // deve ser feito pelo serviço
+                            // minResale = this.validationMin(minResale, Number(resalePrice)) // deve ser feito pelo serviço
+                        })
+                        el.productResale.forEach((resale, i) => {
+                            const resaleProd = resale.costProduct.filter(el => !!el.cost_resale_id)
+                            const resalePrice = resaleProd.reduce((acc, val) => acc + Number(val.priceResale), 0)
+                            chartResale.push({ legend: "Venda (Produtos)", x: countResale, date: this.formatDate(new Date(resale.created_at)), y: Number(resalePrice), qtd: Number(resaleProd.length) })
                             maxResale = this.validationMax(maxResale, Number(resalePrice))
                             minResale = this.validationMin(minResale, Number(resalePrice))
+                            countResale++
                         })
                         if (chartProfit.length !== chartCost.length) {
                             if (chartProfit.length > chartCost.length) {
@@ -191,7 +259,7 @@ export class FindServiceReportService {
                                 const arr = Array.from(Array(subtract).keys())
                                 arr.forEach((el, i) => {
                                     chartProfit.push({
-                                        legend: "Mão de obra (Bruto)",
+                                        legend: "Lucro (Bruto)",
                                         qtd: 0,
                                         x: i + 1,
                                         y: 0,
@@ -202,11 +270,11 @@ export class FindServiceReportService {
                         }
                         chartProfit.map((el, i) => {
                             const y = el.y - chartCost[i].y
-                            chartLiquid.push({ legend: "Mão de obra (Líquido)", qtd: 1, x: i + 1, y, date: el.date })
+                            chartLiquid.push({ legend: "Lucro (Líquido)", qtd: 1, x: i + 1, y, date: el.date })
                         })
 
                         chart.push({
-                            chart: chartProfit, title: "Mão de obra (Bruto)", domain: {
+                            chart: chartProfit, title: "Lucro (Bruto)", domain: {
                                 max: maxProfit,
                                 min: minProfit
                             }
@@ -227,16 +295,16 @@ export class FindServiceReportService {
                             chart: chartResale, domain: {
                                 max: maxResale,
                                 min: minResale
-                            }, title: "Revenda"
+                            }, title: "Venda (Produtos)"
                         })
 
 
                     })
 
-                    const totalProfit = chartProfit.reduce((acc, val) => acc + val.y, 0)
+                    const totalProfit = chartProfit.reduce((acc, val) => acc + val.y, 0) + resalePrice
                     const totalCost = chartCost.reduce((acc, val) => acc + val.y, 0)
                     const totalPart = chartPart.reduce((acc, val) => acc + val.y, 0)
-                    const totalLiquid = (totalProfit - totalCost) + resalePrice
+                    const totalLiquid = (totalProfit - totalCost)
                     return {
                         totalProfit,
                         totalCost,
@@ -273,16 +341,30 @@ export class FindServiceReportService {
                             const formatDate = this.formatDate(new Date(el.created_at))
                             return formatDate === date
                         })
-                        const total = service.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.price)), 0);
-                        const totalResale = cost.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.serviceDetail || !!el.cost_resale_id).reduce((acc, val) => acc + Number(val.priceResale), 0)), 0)
+                        const resale = result[0].productResale.filter(el => {
+                            const formatDate = this.formatDate(new Date(el.created_at))
+                            return formatDate === date
+                        })
+                        const amountProduct = service.reduce((acc,val) => acc + Number(val.costProduct.length),0)
+                        const amountResale = resale.reduce((acc,val) => acc + Number(val.costProduct.length),0)
+                        const totalProduct = service.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.costProduct.reduce((acc, val) => acc + Number(val.priceResale),0))), 0);
+
+    
+                        const totalResale = resale.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.cost_resale_id).reduce((acc, val) => acc + Number(val.priceResale), 0)), 0) + totalProduct
+
+                        const total = service.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.price)), 0) + totalResale;
+
                         const totalCost = cost.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.price)), 0);
                         const totalPart = service.reduce((acc, val) => Number(acc) + val.parts.reduce((accumalator, value) => accumalator + Number
                             (value.price), 0), 0)
                         const amountPart = service.reduce((acc, val) => acc + val.parts.length, 0)
-                        chartProfit.push({ legend: "Mão de obra (Bruto)", x: i + 1, date: date, y: total, qtd: service.length })
+                        chartProfit.push({ legend: "Lucro (Bruto)", x: i + 1, date: date, y: total, qtd: service.length + amountProduct + amountResale })
                         chartCost.push({ legend: "Custo", x: i + 1, date: date, y: totalCost, qtd: cost.length })
                         chartPart.push({ legend: "Peças", qtd: amountPart, x: i + 1, date: date, y: totalPart })
-                        chartResale.push({ legend: "Revenda", qtd: cost[0].costProduct.filter(el => !!el.serviceDetail || !!el.cost_resale_id).length, x: i + 1, date: date, y: totalResale })
+
+                        const qtdResale = resale[0].costProduct.filter(el => !!el.cost_resale_id).length + service.reduce((acc, val) => acc + val.costProduct.length, 0)
+
+                        chartResale.push({ legend: "Venda (Produtos)", qtd: qtdResale, x: i + 1, date: date, y: totalResale })
                         maxProfit = this.validationMax(maxProfit, total)
                         minProfit = this.validationMin(minProfit, total)
                         maxCost = this.validationMax(maxCost, totalCost)
@@ -296,8 +378,8 @@ export class FindServiceReportService {
 
 
                     chartProfit.map((el, i) => {
-                        const y = (el.y - chartCost[i].y) + chartResale[i]?.y
-                        chartLiquid.push({ legend: "Mão de obra (Líquido)", qtd: 1, x: i + 1, y, date: el.date })
+                        const y = (el.y - chartCost[i].y)
+                        chartLiquid.push({ legend:`Vendas, ${chartCost[i].qtd} Custo`, qtd: el.qtd, x: i + 1, y, date: el.date })
                         maxliquid = this.validationMax(maxliquid, y)
                         minliquid = this.validationMin(minliquid, y)
                     })
@@ -305,7 +387,7 @@ export class FindServiceReportService {
                         chart: chartProfit, domain: {
                             max: maxProfit,
                             min: minProfit,
-                        }, title: "Mão de obra (Bruto)"
+                        }, title: "Lucro (Bruto)"
                     })
                     chart.push({
                         chart: chartCost, domain: {
@@ -317,7 +399,7 @@ export class FindServiceReportService {
                         chart: chartLiquid, domain: {
                             max: maxliquid,
                             min: minliquid
-                        }, title: "Mão de obra (Líquido)"
+                        }, title: "Lucro (Líquido)"
                     })
                     chart.push({
                         chart: chartPart, domain: {
@@ -329,12 +411,12 @@ export class FindServiceReportService {
                         chart: chartResale, domain: {
                             max: maxResale,
                             min: minResale
-                        }, title: "Revenda"
+                        }, title: "Venda (Produtos)"
                     })
                     const totalProfit = chartProfit.reduce((acc, val) => acc + val.y, 0)
                     const totalCost = chartCost.reduce((acc, val) => acc + val.y, 0)
                     const totalPart = chartPart.reduce((acc, val) => acc + val.y, 0)
-                    const totalLiquid = (totalProfit - totalCost) + resalePrice
+                    const totalLiquid = (totalProfit - totalCost)
 
                     return {
                         totalProfit,
@@ -366,14 +448,27 @@ export class FindServiceReportService {
                 let resalePrice = 0
                 result.forEach((el, i) => {
                     const totalPart = el.service.reduce((acc, val) => Number(acc) + val.parts.reduce((accumalator, value) => accumalator + Number(value.price), 0), 0)
+
                     const amountPart = el.service.reduce((acc, val) => acc + val.parts.length, 0)
-                    const total = el.service.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.price)), 0);
+
+                    const amountProduct = el.service.reduce((acc,val) => acc + Number(val.costProduct.length),0)
+                    const amountResale = el.productResale.reduce((acc,val) => acc + Number(val.costProduct.length),0)
+
+                    const totalProduct = el.service.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.costProduct.reduce((acc, val) => acc + Number(val.priceResale),0))), 0);
+
+                    const totalResale = el.productResale.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.cost_resale_id).reduce((acc, val) => acc + Number(val.priceResale), 0)), 0) + totalProduct
+
+                    const total = el.service.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.price)), 0)  + totalResale;
                     const totalCost = el.cost.reduce((accumulator, currentValue) => Number(accumulator) + (Number(currentValue.price)), 0);
-                    chartProfit.push({ legend: "Mão de obra (Bruto)", x: i + 1, date: `${new Date(el.start).getDate()} - ${new Date(el.end).getDate()}`, y: total, qtd: el.service.length })
+                    chartProfit.push({ legend: "Lucro (Bruto)", x: i + 1, date: `${new Date(el.start).getDate()} - ${new Date(el.end).getDate()}`, y: total, qtd: el.service.length + amountProduct + amountResale })
                     chartCost.push({ legend: "Custo", x: i + 1, date: `${new Date(el.start).getDate()} - ${new Date(el.end).getDate()}`, y: totalCost, qtd: el.cost.length })
                     chartPart.push({ legend: "Peças", qtd: amountPart, x: i + 1, date: `${new Date(el.start).getDate()} - ${new Date(el.end).getDate()}`, y: totalPart })
-                    const totalResale = el.cost.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.serviceDetail  || !!el.cost_resale_id).reduce((acc, val) => acc + Number(val.priceResale), 0)), 0)
-                    chartResale.push({ legend: "Revenda", qtd: el.cost.reduce((acc, val) => acc + Number(val.costProduct.filter(el => !!el.serviceDetail  || !!el.cost_resale_id).length), 0), x: i + 1, date: `${new Date(el.start).getDate()} - ${new Date(el.end).getDate()}`, y: totalResale })
+
+
+                    const countResale = el.productResale.reduce((acc,val) => acc + val.costProduct.length,0)
+                    const countServiceProduct = el.service.reduce((acc,val) => acc + val.costProduct.length,0)
+
+                    chartResale.push({ legend: "Venda (Produtos)", qtd: (countResale + countServiceProduct), x: i + 1, date: `${new Date(el.start).getDate()} - ${new Date(el.end).getDate()}`, y: totalResale })
 
                     maxProfit = this.validationMax(maxProfit, total)
                     minProfit = this.validationMin(minProfit, total)
@@ -387,7 +482,7 @@ export class FindServiceReportService {
                 })
                 chartProfit.map((el, i) => {
                     const y = el.y - chartCost[i].y
-                    chartLiquid.push({ legend: "Mão de obra (Líquido)", qtd: 1, x: i + 1, y, date: el.date })
+                    chartLiquid.push({ legend: `Vendas, ${chartCost[i].qtd} Custo`, qtd: el.qtd, x: i + 1, y, date: el.date })
                     maxliquid = this.validationMax(maxliquid, y)
                     minliquid = this.validationMin(minliquid, y)
                 })
@@ -395,7 +490,7 @@ export class FindServiceReportService {
                     chart: chartProfit, domain: {
                         max: maxProfit,
                         min: minProfit,
-                    }, title: "Mão de obra (Bruto)"
+                    }, title: "Lucro (Bruto)"
                 })
                 chart.push({
                     chart: chartCost, domain: {
@@ -407,7 +502,7 @@ export class FindServiceReportService {
                     chart: chartLiquid, domain: {
                         max: maxliquid,
                         min: minliquid
-                    }, title: "Mão de obra (Líquido)"
+                    }, title: "Lucro (Líquido)"
                 })
                 chart.push({
                     chart: chartPart, domain: {
@@ -419,13 +514,13 @@ export class FindServiceReportService {
                     chart: chartResale, domain: {
                         max: maxResale,
                         min: minResale
-                    }, title: "Revenda"
+                    }, title: "Venda (Produtos)"
                 })
 
                 const totalProfit = chartProfit.reduce((acc, val) => acc + val.y, 0)
                 const totalCost = chartCost.reduce((acc, val) => acc + val.y, 0)
                 const totalPart = chartPart.reduce((acc, val) => acc + val.y, 0)
-                const totalLiquid = (totalProfit - totalCost) + resalePrice
+                const totalLiquid = (totalProfit - totalCost)
 
                 return {
                     totalProfit,
