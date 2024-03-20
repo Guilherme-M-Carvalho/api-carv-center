@@ -17,16 +17,16 @@ export class CreateCostService {
 
         const priceUnitary = price / amount
 
-        if(priceUnitary > priceResale){
-            throw new Error('{"field": "priceResale", "message": "Preço de revenda menor que o custo!"}');
-        }
+        if(priceUnitary > priceResale)throw new Error('{"field": "priceResale", "message": "Preço de revenda menor que o custo!"}');
 
-        const createProduct =  Array.from(Array(amount).keys()).map(el => {
+        const createProduct =  Array.from(Array(Number(amount)).keys()).map(el => {
             return  {
                 price: priceUnitary,
                 priceResale: priceResale
             }
         })
+
+        if(createProduct.length != amount) throw new Error('{"field": "amount", "message": "Erro na quantidade!"}');
 
         try {
             return await prismaClient.cost.create({

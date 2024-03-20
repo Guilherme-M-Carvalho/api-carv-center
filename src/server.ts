@@ -22,6 +22,8 @@ app.use(router)
 app.use("/files", express.static(path.resolve(__dirname, "..", "uploads")))
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+     console.log(err);
+     
      if (err instanceof Error) {
           try {
                JSON.parse(err.message)

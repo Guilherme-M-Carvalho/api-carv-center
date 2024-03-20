@@ -414,6 +414,7 @@ export class FindServiceReportService {
                         }, title: "Venda (Produtos)"
                     })
                     const totalProfit = chartProfit.reduce((acc, val) => acc + val.y, 0)
+                    
                     const totalCost = chartCost.reduce((acc, val) => acc + val.y, 0)
                     const totalPart = chartPart.reduce((acc, val) => acc + val.y, 0)
                     const totalLiquid = (totalProfit - totalCost)

@@ -58,6 +58,8 @@ export class FindCostService {
                 }
             })
         } catch (error) {
+            console.log(error);
+            
             throw new Error("Internal error")
         }
     }

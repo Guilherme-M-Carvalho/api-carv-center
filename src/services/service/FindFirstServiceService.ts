@@ -3,7 +3,7 @@ import prismaClient from "../../prisma";
 export class FindFirstServiceService {
     async execute({ id }: { id: number }) {
         try {
-            return await prismaClient.serviceCar.findFirst({
+            const service = await prismaClient.serviceCar.findFirst({
                 where: {
                     id: id,
                     deleted: false
@@ -74,6 +74,19 @@ export class FindFirstServiceService {
                                 where: {
                                     deleted: false
                                 }
+                            },
+                            costProduct: {
+                                select: {
+                                    cost: {
+                                        select: {
+                                            name: true,
+                                            id: true,
+                                        }
+                                    },
+                                    price: true,
+                                    priceResale: true,
+                                    id: true
+                                }
                             }
                         },
                         where: {
@@ -84,7 +97,24 @@ export class FindFirstServiceService {
                     updated_at: true
                 }
             })
+            service.serviceDetail.map((el: any) => {
+                const product: {id: number; amount: number}[] = []
+                el.costProduct.map(item => {
+                    const indexFind = product.findIndex(el => el.id == item.cost.id)
+                    console.log(indexFind);
+                    
+                    if(Number(indexFind) > -1){
+                        product[Number(indexFind)].amount++
+                    } else {
+                        product.push({id: item.cost.id, amount: 1})
+                    }
+                })
+                el.costProduct = product
+            })
+            return service
         } catch (error) {
+            console.log(error);
+            
             throw new Error("Internal error");
         }
 
