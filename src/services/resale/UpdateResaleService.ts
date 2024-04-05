@@ -13,22 +13,9 @@ type CountsProps = ProductProps & {
 export class UpdateResaleService {
     async execute({ products, id }: UpdateResaleProps) {
         let counts: CountsProps[] = []
-        const resale = await new FindFirstResaleService().execute({ id })
-
-        try {
-            await prismaClient.costProduct.updateMany({
-                data: {
-                    cost_resale_id: null
-                },
-                where: {
-                    cost_resale_id: resale.id
-                }
-            })
-        } catch (error) {
-            throw new Error("Internal error");
-
-        }
-
+        products.map(el => {
+            el.amount = el.amount - el.amountSave
+        })
         try {
             counts = await Promise.all(products.map(async (product) => {
                 return {
@@ -40,9 +27,13 @@ export class UpdateResaleService {
                         where: {
                             cost_resale_id: null,
                             service_detail_id: null,
-                            cost_id: product.id,
+                            cost_history_id: product.id,
+                            priceResale: product.priceResale,
                             deleted: false,
-                            cost: {
+                            costHistory: {
+                                cost: {
+                                    deleted: false
+                                },
                                 deleted: false
                             }
                         },
@@ -56,35 +47,70 @@ export class UpdateResaleService {
             throw new Error("Internal Error");
 
         }
+
+
         counts.forEach(({ amount, count, id }, index) => {
             if (amount > count.length) {
                 throw new Error(`{"field": "amount", "message": "Quantidade selecionada maior que em estoque", "position": "${index}"}`);
             }
         })
-        const priceTotal = counts.reduce((acc, val) => acc + val.count.reduce((ac, value) => ac + Number(value.priceResale), 0), 0)
-
-        const ids = counts.reduce((ac, el) => [...ac, ...el.count.reduce((acc, val) => [...acc, val.id], [])], [])
+        const priceTotal = counts.reduce((acc, val) => acc + ((val.amount < 0 ? val.amountSave - Math.abs(val.amount) : val.amountSave + val.amount) * val.priceResale), 0)
+        const ids = counts.filter(el => el.amount > 0).reduce((ac, el) => [...ac, ...el.count.reduce((acc, val) => [...acc, val.id], [])], [])
+        const amountDelete = counts.filter(el => el.amount < 0).reduce((ac, el) => [...ac, { amount: Math.abs(el.amount), historyId: el.id }], [])
+        const idsDelete = await Promise.all(amountDelete.map(async ({ historyId, amount }) => {
+            console.log({historyId, amount});
+            
+            return await prismaClient.costProduct.findMany({
+                select: {
+                    id: true,
+                },
+                where: {
+                    cost_resale_id: id,
+                    cost_history_id: historyId
+                },
+                take: Math.abs(amount)
+            })
+        }
+        ))
+        // return { ids, priceTotal, counts, amountDelete, idsDelete }
         try {
-            await prismaClient.costResale.update({
+            const resale = await prismaClient.costResale.update({
                 data: {
                     price: priceTotal,
+
                 },
                 where: {
-                    id: resale.id
+                    id: id
                 }
             })
 
-            await prismaClient.costProduct.updateMany({
-                data: {
-                    cost_resale_id: resale.id
-                },
-                where: {
-                    id: {
-                        in: ids
+            if (ids.length) {
+                await prismaClient.costProduct.updateMany({
+                    data: {
+                        cost_resale_id: id
+                    },
+                    where: {
+                        id: {
+                            in: ids
+                        }
                     }
-                }
-            })
-            return await new FindFirstResaleService().execute({ id })
+                })
+            }
+            if (amountDelete.length) {
+
+                await prismaClient.costProduct.updateMany({
+                    data: {
+                        cost_resale_id: null
+                    },
+                    where: {
+                        id: {
+                            in: idsDelete.reduce((acc, val) => [...acc, ...val.reduce((ac, el) => [...ac, el.id],[])], [])
+                        },
+
+                    },
+                })
+            }
+            return resale
         } catch (error) {
             throw new Error("Internal Error");
 

@@ -141,9 +141,8 @@ model Cost {
   created_at  DateTime? @default(now())
   updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
 
-  image       Image[]
-  costHitory  CostHistory[]
-  costProduct CostProduct[]
+  image      Image[]
+  costHitory CostHistory[]
 
   @@map("cad_cost")
 }
@@ -158,8 +157,9 @@ model CostHistory {
   created_at  DateTime? @default(now())
   updated_at  DateTime? @default(dbgenerated("CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)"))
 
-  cost    Cost @relation(fields: [cost_id], references: [id])
-  cost_id Int
+  cost        Cost          @relation(fields: [cost_id], references: [id])
+  cost_id     Int
+  costProduct CostProduct[]
 
   @@map("cad_cost_history")
 }
@@ -174,10 +174,10 @@ model CostProduct {
 
   serviceDetail     ServiceDetailCar? @relation(fields: [service_detail_id], references: [id])
   service_detail_id Int?
-  costResale     CostResale? @relation(fields: [cost_resale_id], references: [id])
-  cost_resale_id Int?
-  cost              Cost              @relation(fields: [cost_id], references: [id])
-  cost_id           Int
+  costResale        CostResale?       @relation(fields: [cost_resale_id], references: [id])
+  cost_resale_id    Int?
+  costHistory       CostHistory       @relation(fields: [cost_history_id], references: [id])
+  cost_history_id   Int
 
   @@map("cad_cost_product")
 }

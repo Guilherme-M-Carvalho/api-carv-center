@@ -35,14 +35,14 @@ export class CreateCostService {
                         create: {
                             amount: amount,
                             price: price,
-                            priceResale: priceResale
+                            priceResale: priceResale,
+                            costProduct: {
+                                create: createProduct
+                            }
                         }
                     },
                     name: name,
                     description: description,
-                    costProduct: {
-                        create: createProduct
-                    }
                 }
             })
         } catch (error) {

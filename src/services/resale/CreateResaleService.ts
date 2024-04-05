@@ -21,9 +21,13 @@ export class CreateResaleService {
                         where: {
                             cost_resale_id: null,
                             service_detail_id: null,
-                            cost_id: product.id,
+                            cost_history_id: product.id,
+                            priceResale: product.priceResale,
                             deleted: false,
-                            cost: {
+                            costHistory: {
+                                cost: {
+                                    deleted: false
+                                },
                                 deleted: false
                             }
                         },
@@ -37,6 +41,7 @@ export class CreateResaleService {
             throw new Error("Internal Error");
 
         }
+        // return {products, counts}
         counts.forEach(({ amount, count, id }, index) => {
             if(amount > count.length){
                 throw new Error(`{"field": "amount", "message": "Quantidade selecionada maior que em estoque", "position": "${index}"}`);

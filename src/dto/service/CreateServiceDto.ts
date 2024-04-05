@@ -36,10 +36,10 @@ type ImageProps = {
 
 export class CreateServiceDto {
     handleValidationCreateService({ car, serviceDetail }: HandleValidationCreateServiceProps) {
-        if (!car.client.name) {
+        if (!car.client?.name) {
             throw new Error('{"field": "name", "message": "Nome do cliente inválido"}');
         }
-        if (String(car.client.phone).length < 10) {
+        if (String(car.client?.phone).length < 10) {
             throw new Error('{"field": "phone", "message": "Telefone do cliente inválido"}');
         }
         if (!car.description) {

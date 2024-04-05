@@ -59,6 +59,7 @@ export class FindFirstServiceService {
                                     id: true,
                                     price: true,
                                     description: true,
+                                    priceResale:true
                                 },
                                 where: {
                                     deleted: false
@@ -101,7 +102,6 @@ export class FindFirstServiceService {
                 const product: {id: number; amount: number}[] = []
                 el.costProduct.map(item => {
                     const indexFind = product.findIndex(el => el.id == item.cost.id)
-                    console.log(indexFind);
                     
                     if(Number(indexFind) > -1){
                         product[Number(indexFind)].amount++

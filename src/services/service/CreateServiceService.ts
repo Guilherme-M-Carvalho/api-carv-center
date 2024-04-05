@@ -31,6 +31,7 @@ export interface ServiceDetail {
     typeService: number
     parts: PartsProps[];
     deleted?: boolean;
+    costProduct: ProductsProps[]
 
 }
 
@@ -46,7 +47,14 @@ type PartsProps = {
     id?: number
     name: string;
     price: number;
+    priceResale: number;
     deleted?: boolean;
+}
+
+type ProductsProps = {
+    id?: number
+    amount: string;
+    priceResale?: number
 }
 
 export class CreateServiceService {
@@ -86,9 +94,9 @@ export class CreateServiceService {
         let partPrice = 0
         const serviceDetailFilter = serviceDetail.filter(el => el?.parts?.length && !el.customerParts && !el.deleted)
         serviceDetailFilter.forEach(el => {
-            if(el.parts){
+            if (el.parts) {
                 const parts = el.parts.filter(el => !el.deleted)
-                partPrice += parts?.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0);
+                partPrice += parts?.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.priceResale), 0);
             }
         })
         const priceTotal = serviceDetail.reduce((accumulator, currentValue) => Number(accumulator) + Number(currentValue.price), 0) + partPrice;
@@ -98,7 +106,34 @@ export class CreateServiceService {
         const data: any = {
             price: Number(priceTotal),
             serviceDetail: {
-                create: serviceDetail?.map(({ description, image, price, customerParts, typeService, obs, parts }, index) => {
+                create: await Promise.all(serviceDetail?.map(async ({ costProduct, description, image, price, customerParts, typeService, obs, parts }, index) => {
+                    const products =  await Promise.all(costProduct.map(async (el, indexProduct) => {
+                        const count = await prismaClient.costProduct.findMany({
+                            select: {
+                                id: true,
+                                priceResale: true
+                            },
+                            where: {
+                                cost_resale_id: null,
+                                service_detail_id: null,
+                                // cost_id: el.id,
+                                deleted: false,
+                                // cost: {
+                                //     deleted: false
+                                // }
+                            },
+                            take: Number(el.amount)
+                        })
+                        costProduct[indexProduct].priceResale = count.reduce((acc, val) => acc + Number(val.priceResale),0)
+                        if (Number(el.amount) > count.length) {
+                            throw new Error(`{"field": "amount", "message": "Quantidade selecionada maior que em estoque", "position": "${index}"}`);
+                        }
+                        return count.map(item => {
+                            return {
+                                id: item.id
+                            }
+                        })
+                    }))
                     return {
                         description: description,
                         image: {
@@ -117,15 +152,20 @@ export class CreateServiceService {
                         type_service_id: !!typeService ? typeService : undefined,
                         obs: obs,
                         parts: {
-                            create: parts ? parts?.map(({name, price}) => {
-                            return {
-                                description: name,
-                                price: price
+                            create: parts ? parts?.map(({ name, price, priceResale }) => {
+                                return {
+                                    description: name,
+                                    price: price,
+                                    priceResale: priceResale
 
-                            }
-                        }) : []}
+                                }
+                            }) : []
+                        },
+                        costProduct: {
+                            connect:products.flat()
+                        },
                     }
-                })
+                }))
             },
             car: {
                 create: {
@@ -149,7 +189,10 @@ export class CreateServiceService {
 
         }
 
-        if(existClient){
+        const priceProducts = serviceDetail.reduce((acc, val) => acc + val.costProduct.reduce((acc2, val2) => acc2+ Number(val2.priceResale),0) , 0)
+        data.price = data.price + priceProducts
+        
+        if (existClient) {
             delete data.car.create.client
             data.car.create.client_id = existClient.id
         }

@@ -17,49 +17,67 @@ export class FindCostService {
                             updatePrice: true,
                             created_at: true,
                             updated_at: true,
+                            costProduct: {
+                                select: {
+                                    id: true,
+                                    price: true,
+                                    priceResale: true,
+                                    service_detail_id: true,
+                                    cost_resale_id: true,
+                                    created_at: true,
+                                    updated_at: true
+                                },
+                                where: {
+                                    deleted: false
+                                },
+                            },
                         }
                     },
                     name: true,
                     description: true,
-                    costProduct: {
-                        select: {
-                            id: true,
-                            price: true,
-                            priceResale: true,
-                            service_detail_id: true,
-                            cost_resale_id: true,
-                            created_at: true,
-                            updated_at: true
-                        }
-                    },
                     created_at: true,
                     updated_at: true
                 }
             })
 
             return cost.map(el => {
-                const totalSold = el.costProduct.filter(item => !!item.service_detail_id || !!item.cost_resale_id)
+                const productSold = el.costHitory.reduce((acc, val) => {
+                    const append = val.costProduct.filter(item => item.cost_resale_id || item.service_detail_id)
+                    return [...acc, ...append]
+                }, [])
+                const productStock = el.costHitory.reduce((acc, val) => {
+                    const append = val.costProduct.filter(item => !item.cost_resale_id && !item.service_detail_id)
+                    return [...acc, ...append]
+                }, [])
+                const priceResale: { price: number; amount: number}[] = []
+                const priceResaleStock = productStock.reduce((acc, val) => {
+                    const index = acc.findIndex(el=> Number(el.price) == Number(val.priceResale))
+                    if(index > -1){
+                        acc[index].amount += 1
+                        return [...acc]
+                    }
+                    acc.push({ amount: 1, price: Number(val.priceResale) })
+                    return [...acc]
+                },priceResale)
+
+                const totalResale = productSold.reduce((acc, val) => acc + Number(val.priceResale), 0)
                 const history = el.costHitory.pop()
-                const totalResale = totalSold.reduce((acc, val) => acc + Number(val.priceResale), 0)
-                const amountStock = el.costProduct.filter(item => !item.service_detail_id && !item.cost_resale_id)
+
+
                 const res = {
                     ...el,
                     totalResale: totalResale,
-                    totalSold: totalSold.length,
-                    amount: el.costProduct.length,
+                    totalSold: productSold.length,
                     price: history.price,
-                    priceResale: history.priceResale,
-                    amountStock: amountStock.length
+                    priceResale: priceResaleStock,
+                    amountStock: productStock.length
                 }
                 delete res.costHitory
-                delete res.costProduct
-                return {
-                    ...res
-                }
+                return res
             })
         } catch (error) {
             console.log(error);
-            
+
             throw new Error("Internal error")
         }
     }

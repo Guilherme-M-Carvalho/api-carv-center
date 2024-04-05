@@ -1,7 +1,7 @@
 import prismaClient from "../../prisma";
 
 export class FindFirstResaleService {
-    async execute({id}: {id: number}){
+    async execute({ id }: { id: number }) {
         let resale = null
         try {
             resale = await prismaClient.costResale.findFirst({
@@ -10,13 +10,18 @@ export class FindFirstResaleService {
                     costProduct: {
                         select: {
                             id: true,
-                            cost: {
+                            costHistory: {
                                 select: {
                                     id: true,
-                                    description: true,
-                                    name: true,
-                                    created_at: true,
-                                    updated_at: true
+                                    cost: {
+                                        select: {
+                                            id: true,
+                                            description: true,
+                                            name: true,
+                                            created_at: true,
+                                            updated_at: true
+                                        }
+                                    }
                                 }
                             },
                             priceResale: true,
@@ -33,13 +38,13 @@ export class FindFirstResaleService {
                     deleted: false
                 }
             })
-        } catch (error) {   
-            throw new Error("Internal error");   
+        } catch (error) {
+            throw new Error("Internal error");
         }
-        if(!resale){
+        if (!resale) {
             throw new Error(`{"message": "Venda não existe"}`);
         }
-        const products:{
+        type ProductProps = {
             id: number;
             cost: {
                 id: number;
@@ -48,18 +53,47 @@ export class FindFirstResaleService {
                 name: string;
                 description: string;
             };
-        }[] = resale.costProduct.reduce((acc, item) => acc.find(el => el.cost.id == item.cost.id) ? [...acc] : [...acc, item], [])
+            priceResale: number
+        }[]
 
-        const productsAmount = products.map(prod => {
-            return {
-                id: prod.cost.id,
-                amount: resale.costProduct.filter(item => item.cost.id ==prod.cost.id).length
+        const initReduce: ProductProps = []
+
+        // const products: ProductProps = resale.costProduct.reduce((acc, item) => acc.find(el => el.cost.id == item.costHistory.cost.id && Number(el.ori)) ? [...acc] : [...acc,
+        // {
+        //     id: item.id,
+        //     cost: {
+        //         ...item.costHistory.cost
+        //     },
+        //     priceResale: Number(item.priceResale)
+        // }
+        // ], initReduce)
+
+        type Product = {
+            id: number;
+            amount: number;
+            priceResale: number
+        }[]
+
+        // return resale.costProduct
+        const productsAmount = resale.costProduct.reduce((acc, val) => {
+
+            console.log(val.cost);
+            
+            const index = acc.findIndex(el => el.id == val.costHistory.id && Number(el.priceResale) == Number(val.priceResale))
+            if (index > -1) {
+                acc[index].amount += 1
+                return [...acc]
             }
-        })
-
+            return [...acc, {
+                id: val.costHistory.id,
+                amount: 1,
+                priceResale: val.priceResale
+            }]
+        }, <Product>[])
 
         return {
             ...resale,
+            // products2: products,
             products: productsAmount
         }
     }

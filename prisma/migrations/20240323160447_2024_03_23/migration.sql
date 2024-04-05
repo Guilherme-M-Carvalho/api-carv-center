@@ -142,7 +142,7 @@ CREATE TABLE `cad_cost_product` (
     `deleted` BOOLEAN NOT NULL DEFAULT false,
     `service_detail_id` INTEGER NULL,
     `cost_resale_id` INTEGER NULL,
-    `cost_id` INTEGER NOT NULL,
+    `cost_history_id` INTEGER NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -192,4 +192,4 @@ ALTER TABLE `cad_cost_product` ADD CONSTRAINT `cad_cost_product_service_detail_i
 ALTER TABLE `cad_cost_product` ADD CONSTRAINT `cad_cost_product_cost_resale_id_fkey` FOREIGN KEY (`cost_resale_id`) REFERENCES `cad_cost_resale`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `cad_cost_product` ADD CONSTRAINT `cad_cost_product_cost_id_fkey` FOREIGN KEY (`cost_id`) REFERENCES `cad_cost`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `cad_cost_product` ADD CONSTRAINT `cad_cost_product_cost_history_id_fkey` FOREIGN KEY (`cost_history_id`) REFERENCES `cad_cost_history`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

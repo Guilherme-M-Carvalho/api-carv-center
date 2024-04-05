@@ -10,13 +10,17 @@ export class FindResaleService {
                     costProduct: {
                         select: {
                             id: true,
-                            cost: {
+                            costHistory: {
                                 select: {
-                                    id: true,
-                                    name: true,
-                                    description: true,
-                                    created_at: true,
-                                    updated_at: true
+                                    cost: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            description: true,
+                                            created_at: true,
+                                            updated_at: true
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -31,8 +35,7 @@ export class FindResaleService {
 
 
             return resale.map(el => {
-
-                const products:{
+                type ProductProps = {
                     id: number;
                     cost: {
                         id: number;
@@ -41,13 +44,24 @@ export class FindResaleService {
                         name: string;
                         description: string;
                     };
-                }[] = el.costProduct.reduce((acc, item) => acc.find(el => el.cost.id == item.cost.id) ? [...acc] : [...acc, item], [])
+                }[] 
+
+                const initReduce: ProductProps = []
+
+                const products: ProductProps = el.costProduct.reduce((acc, item) => acc.find(el => el.cost.id == item.costHistory.cost.id) ? [...acc] : [...acc, 
+                    {
+                        id: item.id,
+                        cost: {
+                            ...item.costHistory.cost
+                        }
+                    }
+                ], initReduce)
 
                 return {
                     ...el,
                     amountProduct: el.costProduct.length,
                     amountTypeProduct: products.length,
-                    products: products.reduce((acc, val, index) => acc + `${el.costProduct.filter(item => item.cost.id === val.cost.id).length} ${val.cost.name}${(index + 1) === products.length ? "": ", "}`  , "")
+                    products: products.reduce((acc, val, index) => acc + `${el.costProduct.filter(item => item.costHistory.cost.id === val.cost.id).length} ${val.cost.name}${(index + 1) === products.length ? "" : ", "}`, "")
                 }
             })
         } catch (error) {
